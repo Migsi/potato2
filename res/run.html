@@ -15,6 +15,21 @@
      const terminal = document.getElementById('terminal');
      const commandInput = document.getElementById('commandInput');
 
+     const ws = new WebSocket("ws://localhost/ws");
+     ws.onopen = () => {
+         console.log("Connected to WebSocket server!");
+         ws.send("Hello server!"); // send a message immediately
+     };
+     ws.onmessage = (event) => {
+         console.log("Server says:", event.data);
+     };
+     ws.onclose = () => {
+         console.log("WebSocket connection closed");
+     };
+     ws.onerror = (err) => {
+         console.error("WebSocket error:", err);
+     };
+
      commandInput.addEventListener('keydown', function (e) {
          if (e.key === 'Enter') {
              e.preventDefault();

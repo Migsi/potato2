@@ -10,6 +10,9 @@
 #include <arpa/inet.h>
 #include <time.h>
 #include <ctype.h>
+#include <openssl/sha.h>
+#include <openssl/evp.h>
+#include <openssl/buffer.h>
 
 #define PORT 80
 #define BUF_SIZE 4096
@@ -17,6 +20,7 @@
 
 #include "func.h"
 #include "logger.h"
+
 
 char hex_to_char(char high, char low) {
     int hi = (isdigit(high)) ? high - '0' : tolower(high) - 'a' + 10;
@@ -73,6 +77,69 @@ char* read_file(const char *filename, size_t *size) {
     return buf;
 }
 
+char *base64_encode(const unsigned char *input, int length) {
+    BIO *bmem = NULL, *b64 = NULL;
+    BUF_MEM *bptr;
+
+    b64 = BIO_new(BIO_f_base64());
+    bmem = BIO_new(BIO_s_mem());
+    b64 = BIO_push(b64, bmem);
+
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+    BIO_write(b64, input, length);
+    BIO_flush(b64);
+    BIO_get_mem_ptr(b64, &bptr);
+
+    char *buff = (char *)malloc(bptr->length + 1);
+    memcpy(buff, bptr->data, bptr->length);
+    buff[bptr->length] = 0;
+
+    BIO_free_all(b64);
+    return buff;
+}
+
+char *
+generate_accept_key(const char *client_key) {
+    const char *magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    char combined[256];
+    unsigned char hash[SHA_DIGEST_LENGTH];
+
+    snprintf(combined, sizeof(combined), "%s%s", client_key, magic);
+    SHA1((unsigned char *)combined, strlen(combined), hash);
+
+    return base64_encode(hash, SHA_DIGEST_LENGTH);
+}
+
+#define SHA_DIGEST_LENGTH 128
+int
+response_ws(int client_sock, char* req)
+{
+    char client_key[128];
+    char *start = strstr(req, "Sec-WebSocket-Key:");
+    if (!start) 
+	    return 1;
+
+    start += strlen("Sec-WebSocket-Key:");
+    while (*start == ' ') start++;          // skip spaces
+
+    char *end = strstr(start, "\r\n");
+    strncpy(client_key, start, end - start);
+    client_key[end - start] = '\0';
+    fprintf(stderr, "Websocket key '%s'", client_key);
+    char *accept_key = generate_accept_key(client_key);
+
+    char resp[512];
+    snprintf(resp, sizeof(resp),
+        "HTTP/1.1 101 Switching Protocols\r\n"
+        "Upgrade: websocket\r\n"
+        "Connection: Upgrade\r\n"
+        "Sec-WebSocket-Accept: %s\r\n\r\n",
+        accept_key);
+    fprintf(stderr, "%s", resp);
+
+    send(client_sock, resp, strlen(resp), 0);
+    close(client_sock);
+}
 
 void handle_login(int client_sock, const char *body) {
     char username[32];
@@ -103,26 +170,62 @@ void handle_login(int client_sock, const char *body) {
     close(client_sock);
 }
 
-int parse_cookie(const char *req, const char *name, char *out, size_t out_sz)
+int
+header_value(char *c, const char *name, char* out, size_t out_sz)
 {
-    const char *c = strstr(req, "Cookie:");
-    if (!c) return -1;
-    c += 7;
-
-    while (*c) {
-        while (*c == ' ' || *c == ';') c++;
-        if (!strncmp(c, name, strlen(name)) && c[strlen(name)] == '=') {
-            c += strlen(name) + 1;
-            size_t n = strcspn(c, ";\r\n");
-            if (n >= out_sz) n = out_sz - 1;
-            memcpy(out, c, n);
-            out[n] = 0;
-            return 0;
+    // DEBUG fprintf(stderr, "xxx=%s\n---\n", c);
+    // go
+    while (*c) 
+    {
+        while (*c == ' ' || *c == ';') c++;    // fast forward to next value // fast forward to next value
+					       // skip whitespaces
+        if (!strncmp(c, name, strlen(name)) && // is it the name we are looking for
+	    c[strlen(name)] == '=')            // and separated with a equal sign '='
+	{
+            c += strlen(name) + 1;             // move pointer to the first char after '=', the value
+            size_t n = strcspn(c, ";\r\n");    // pos of the termination symbols
+            if (n >= out_sz)
+		    n = out_sz - 1;
+            fprintf(stderr, "value found %s\n", out);
+            memcpy(out, c, n);                 // copy the value
+            out[n] = 0;                        // terminate the value with a \0
+            return 0;                          // SUCCESS
         }
-        c = strchr(c, ';');
-        if (!c) break;
+        c = strchr(c, ';');                    // next value split by ';'
+        if (!c) break;                         // done
     }
-    return -1;
+    return -1;                                 // FAIL
+}
+
+char*
+seek_header(char* req, const char *header_name)
+{
+    /*
+    GET /home.html HTTP/1.1
+    Host: developer.mozilla.org
+    Cookie: name=value; name2=value2; name3=value3
+    Connection: upgrade
+    Upgrade: example/1, foo/2
+    */
+    char tmp_search[255] = {0};
+    snprintf(tmp_search, sizeof(tmp_search), "%s:", header_name);
+    char *c = strstr(req, tmp_search);
+    if (!c) 
+        return NULL;
+    c += strlen(header_name) + 1;
+    return c; // return the position of the value after the header name in the buffer
+}
+
+int 
+parse_cookie(const char *req, const char *name, char *out, size_t out_sz)
+{
+    // Cookie: name=value
+    // Cookie: name=value; name2=value2; name3=value3
+    char *c;
+    c = seek_header(req, "Cookie");
+    if(!c)
+	return -1;
+    return header_value(c, "session", out, out_sz);
 }
 
 t_session*
@@ -192,13 +295,17 @@ auth_or_forbidden(int client_sock, char* buffer)
 }
 
 
-void* handle_http_client(void *arg) {
+void* 
+handle_http_client(void *arg) {
     int client_sock = *(int *)arg;
     size_t size = 0;
     free(arg);
 
     char buffer[BUF_SIZE] = {0};
     read(client_sock, buffer, BUF_SIZE - 1); // maybe too small
+
+    //parse_header("Sec-WebSocket-Key");
+
     char method[8], path[128];
     sscanf(buffer, "%s %s", method, path);
     fprintf(stderr, "method: '%s' path '%s'\n",
@@ -213,6 +320,12 @@ void* handle_http_client(void *arg) {
             char *file_contents = read_file("res/index.html", &size);
             send(client_sock, file_contents, strlen(file_contents), 0);
             close(client_sock);
+            return NULL;
+        }
+	else if (strcmp(path, "/ws") == 0)
+	{
+            LOG("WS /ws");
+	    response_ws(client_sock, buffer);
             return NULL;
         }
 	else if (strcmp(path, "/login") == 0)
