@@ -26,7 +26,7 @@ jobs:
 
       - name: Test API with wget
         run: |
-          wget -qO- http://localhost:80 || (echo "API test failed" && exit 1)
+          wget -qO- http://localhost:80
 
       - name: Show container logs
         if: always()
