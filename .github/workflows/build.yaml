@@ -1,0 +1,33 @@
+
+name: Build and Test API
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t potato .
+
+      - name: Run container
+        run: |
+          docker run -d -p 80:80 --name potato potato
+
+      - name: Wait for API to start
+        run: sleep 2
+
+      - name: Test API with wget
+        run: |
+          wget -qO- http://localhost:80 || (echo "API test failed" && exit 1)
+
+      - name: Show container logs
+        if: always()
+        run: docker logs api_test
