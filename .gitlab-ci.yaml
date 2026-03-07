@@ -1,0 +1,33 @@
+stages:
+  - build
+  - test
+
+variables:
+  TEST_USER1: "peter"
+  TEST_PASS1: "12345"
+  TEST_SUITE1: "./testsuite.py"
+  TEST_ENDPOINT_LOGIN: "http://localhost:80/login"
+  TEST_ENDPOINT_RUN: "http://localhost:80/login"
+
+build_container:
+  stage: build
+  image: docker:25
+  service:
+    - docker:25-dind
+  script:
+    - ./build.sh
+  artifacts:
+    paths:
+      - image.tar
+
+test_web:
+  stage: test
+  image: docker:25
+  services:
+    - docker:25-dind
+  dependencies:
+    - build
+  script:
+    - docker load -i image.tar
+    - ./run.sh
+    - wget -qO- http://localhost:80/ || (echo "Test failed" && exit 1)
