@@ -19,15 +19,13 @@ jobs:
 
       - name: Run container
         run: |
-          docker run -d -p 80:80 --name potato potato
-
-      - name: Wait for API to start
-        run: sleep 2
+          docker run -d -ti -p 80:80 --name potato potato http  
 
       - name: Test API with wget
         run: |
-          wget -qO- http://localhost:80
+          wget -qO- http://localhost:80/login
+          wget -qO- http://localhost:80/run
 
       - name: Show container logs
         if: always()
-        run: docker logs api_test
+        run: docker logs potato
