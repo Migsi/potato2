@@ -9,5 +9,5 @@ docker run --name potato \
 	   --cap-add=SYS_ADMIN \
 	   --security-opt seccomp=unconfined \
 	   --security-opt apparmor=unconfined \
-	   potato2 $*
+	   potato $*
 

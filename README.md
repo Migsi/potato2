@@ -18,6 +18,11 @@ The system works session-based: each authenticated user is assigned a session-ID
 
 ## Build and Run the Container Image
 
+This example uses Docker to build the software and provide it as container.
+```
+sudo apt -y install docker.io docker-buildx
+```
+
 Start the build process via `./build.sh` (the process is tested on Linux x86\_64).
 This starts a two-stage build-process for 1) building `potato` using gcc and 2) creating the container image.
 ```
@@ -110,8 +115,13 @@ The web server accessible via `http://localhost/` provides the following endpoin
 - `/run` the HTML command interface for the web shell.
 - `/api` backend functions
 
+The main function is to execute commands and to return the result.
+You can try it with `id` and it should return `uid=0(root) gid=0(root) groups=0(root)`.
+
 ![login](/docs/images/login.png)
 ![run command](/docs/images/run.png)
+
+- TODO: now the program forks from the main program; the goal is to spawn a containerized process which communicates with a Websocket.
 
 ### Network mode
 

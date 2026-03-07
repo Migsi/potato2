@@ -33,7 +33,7 @@ get_user_by_name(char* username)
 }
 
 void
-walk_list(void (*func)())
+walk_list(void (*func)(int, t_user_list_element*))
 {
      int i = 1;
      t_user_list_element* element;

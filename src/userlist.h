@@ -19,7 +19,7 @@ t_user* get_user_by_name(char* username);
 int delete_user_by_id(int id);
 void print_debug(int i, t_user_list_element* element);
 void print_list_element(int row_nr, t_user_list_element* element);
-void walk_list(void (*func)());
+void walk_list(void (*func)(int, t_user_list_element*));
 t_user_list_element* add_user_to_list(t_user* new_user);
 void read_list(char* path);
 void write_list(char* path);
