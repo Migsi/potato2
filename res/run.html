@@ -18,10 +18,10 @@
      const ws = new WebSocket("ws://localhost/ws");
      ws.onopen = () => {
          console.log("Connected to WebSocket server!");
-         ws.send("Hello server!"); // send a message immediately
+         ws.send("id"); // send a message immediately
      };
      ws.onmessage = (event) => {
-         console.log("Server says:", event.data);
+         console.log(">", event.data);
      };
      ws.onclose = () => {
          console.log("WebSocket connection closed");
@@ -33,6 +33,8 @@
      commandInput.addEventListener('keydown', function (e) {
          if (e.key === 'Enter') {
              e.preventDefault();
+	     ws.send(commandInput.value);
+             /*
              fetch('/api/run', { 
                method: 'POST',
                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -53,21 +55,19 @@
              }).catch(err => {
                    console.error("error executing command");
 	     });
+	     */
 	 }
     });
 
     window.onload = function recoverLastWindow() { 
-         const window1 = localStorage.getItem('window');
-         if(window1 == "command")
-	 {
-	     fetch('/api/status').then(() => {
-                   console.log("command executed successfully");
-               })
-               .catch(err => {
-                    window.location.replace("/login");
-		    console.log("error executing command");
-               });
-	 }
+	fetch('/api/status').then(() => {
+                  console.log("command executed successfully");
+              })
+              .catch(err => {
+                   window.location.replace("/login");
+	           console.log("error executing command");
+              });
+
     }
   </script>
 </body>
