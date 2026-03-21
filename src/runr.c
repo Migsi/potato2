@@ -26,6 +26,8 @@
 
 #define BUF_SIZE 1024
 
+char* DEFAULT_SHELL = { "/bin/sh" };
+
 void
 copy_file(char* source, char* dest)
 {

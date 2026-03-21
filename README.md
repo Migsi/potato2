@@ -146,4 +146,10 @@ echo source `pwd`/gef/gef.py >> ~/.gdbinit
 
 There is `http_client.py` that tests the web server functions.
 
+## Challenges
+- jump to whoami
+- leak an address from the stack
+- do a ret2libc on x86_64
 
+## Includes
+This project uses [toybox](https://landley.net/toybox/) and includes it during the build.
