@@ -1,5 +1,7 @@
+#!/bin/sh
 
 docker run --name potato \
+	   --platform linux/amd64 \
 	   --rm \
            --init \
 	   -ti \
@@ -9,5 +11,5 @@ docker run --name potato \
 	   --cap-add=SYS_ADMIN \
 	   --security-opt seccomp=unconfined \
 	   --security-opt apparmor=unconfined \
-	   potato $*
+	   rkugler/potato:amd64 $*
 

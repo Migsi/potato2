@@ -337,7 +337,7 @@ runr_start(t_runr_args *arg)
          }
     }
     
-    char* toybox = "toybox-x86_64";
+    char* toybox = "toybox";
     snprintf(path, sizeof(path), "%s/bin/toybox", new_root);
     printf("copy toybox from %s to %s\n", toybox, path);
     copy_file(toybox, path);
