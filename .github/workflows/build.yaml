@@ -15,11 +15,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t potato .
+        run: ./build.sh
 
       - name: Run container
         run: |
-          docker run -d -ti -p 80:80 --name potato potato http  
+          ./run64.sh 
 
       - name: Test API with wget
         run: |
