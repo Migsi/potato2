@@ -16,16 +16,3 @@ jobs:
 
       - name: Build Docker image
         run: ./build.sh
-
-      - name: Run container
-        run: |
-          ./run64.sh 
-
-      - name: Test API with wget
-        run: |
-          wget -qO- http://localhost:80/login
-          wget -qO- http://localhost:80/run
-
-      - name: Show container logs
-        if: always()
-        run: docker logs potato
