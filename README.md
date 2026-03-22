@@ -144,6 +144,12 @@ git clone https://github.com/hugsy/gef.git
 echo source `pwd`/gef/gef.py >> ~/.gdbinit
 ```
 
+### Debugging
+
+```
+ulimit -c unlimited
+```
+
 There is `http_client.py` that tests the web server functions.
 
 ## Challenges

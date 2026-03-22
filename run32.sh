@@ -2,7 +2,6 @@
 
 docker run --name potato \
 	   --platform linux/386 \
-	   --rm \
            --init \
 	   -ti \
 	   -p 80:80 \

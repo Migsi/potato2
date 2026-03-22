@@ -62,7 +62,6 @@ main(int argc, char** argv)
           handle_client();
           break;
        case MODE_HTTP:
-	  /*
 	  pthread_attr_t attr;
 	  pthread_attr_init(&attr);
 	  pthread_attr_setguardsize(&attr, 0);
@@ -70,7 +69,6 @@ main(int argc, char** argv)
           pthread_create(&t, &attr, &http_server, NULL);
           pthread_detach(t);
           handle_client();
-	  */
 	  http_server(NULL);
           break;
        default:

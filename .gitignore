@@ -1,5 +1,9 @@
 potato
+potato32
+potato64
 .*.swp
 core.*
 toybox-x86_64
 solutions/
+src/openssl-3.0.13.tar.gz
+src/openssl-3.0.13
